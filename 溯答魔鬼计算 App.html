@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>溯答魔鬼计算 - 现代版</title>
+    <style>
+        /* --- 1. 全局和排版美化 --- */
+        body {
+            font-family: 'system-ui', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* 使用现代系统字体 */
+            background-color: #f5f7fa; 
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px 20px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); 
+            width: 95%; 
+            max-width: 500px; 
+            text-align: center;
+            box-sizing: border-box;
+        }
+        
+        /* 标题 */
+        h1 {
+            color: #007bff; 
+            margin-bottom: 30px;
+            font-size: 2.2em; 
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .game-section {
+            margin-bottom: 18px;
+            padding: 10px;
+            border-radius: 15px;
+            background-color: transparent; 
+        }
+
+        .hidden {
+            display: none !important; 
+        }
+        
+        /* --- 2. 控制区样式 --- */
+        #controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: stretch;
+            background-color: #e6f3ff; 
+            padding: 20px;
+            border-radius: 15px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #0056b3;
+        }
+
+        input[type="number"] {
+            padding: 12px;
+            border: 1px solid #cce5ff; 
+            border-radius: 10px;
+            font-size: 1.1em;
+            background-color: #ffffff;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input[type="number"]:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); 
+            outline: none;
+        }
+
+        #start-btn, #restart-btn {
+            padding: 15px 25px;
+            background-color: #28a745; 
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+            transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+        }
+        
+        #restart-btn {
+            background-color: #6c757d; 
+            box-shadow: 0 4px 10px rgba(108, 117, 125, 0.3);
+            margin-top: 20px;
+        }
+        
+        #start-btn:active, #restart-btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* --- 3. 题目显示区 (算式样式调整) --- */
+        #question-area {
+            background-color: #fcfcfc;
+            border-radius: 15px;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+            padding: 25px 15px; 
+        }
+
+        .question-box {
+            font-size: 2.5em; /* 调整字号，更简洁 */
+            font-weight: 700; /* 保持一定粗细 */
+            color: #495057; /* 现代深灰色 */
+            min-height: 80px; /* 略微减小高度 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0 0; /* 调整上边距 */
+            opacity: 1; 
+            transition: opacity 0.3s; 
+        }
+
+        #timer-display {
+            font-size: 1.1em;
+            min-height: 25px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        /* --- 4. 答案输入/结果显示区 --- */
+        #answer-area {
+            position: relative; 
+            padding-bottom: 170px; 
+            min-height: 250px;
+        }
+        
+        #answer-prompt {
+            font-size: 1.4em !important;
+            font-weight: 600;
+            color: #007bff !important; 
+            margin-bottom: 15px; /* **增加与结果区域的间隔** */
+        }
+
+        /* **结果提示区域美化** */
+        .result {
+            margin-top: 5px; /* 调整顶部间距 */
+            padding: 10px 15px;
+            font-size: 1.05em;
+            width: 90%;
+            max-width: 400px;
+            box-sizing: border-box;
+            border-radius: 10px; /* **圆角矩形边框** */
+            
+            visibility: hidden; 
+            opacity: 0; 
+            min-height: 40px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .result.visible {
+            visibility: visible;
+            opacity: 1; 
+            transition: opacity 0.3s ease;
+        }
+        
+        .result.correct {
+            background-color: #e8f5e9; 
+            color: #28a745; 
+            border: 1px solid #c3e6cb;
+        }
+        
+        .result.incorrect {
+            background-color: #fcebeb; 
+            color: #dc3545; 
+            border: 1px solid #f5c6cb;
+        }
+
+        /* --- 5. 自定义数字键盘 (保持美化) --- */
+        #custom-keypad {
+            position: absolute; 
+            bottom: 0; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%; 
+            max-width: 350px; 
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px; 
+            padding: 15px;
+            background-color: #fcfcfc; 
+            border-radius: 20px; 
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); 
+        }
+
+        .keypad-btn {
+            padding: 20px 0; 
+            font-size: 2.2em; 
+            font-weight: 700;
+            border: none;
+            border-radius: 15px; 
+            cursor: pointer;
+            background-color: #ffffff; 
+            color: #007bff; 
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); 
+            transition: background-color 0.1s ease, transform 0.05s, box-shadow 0.1s;
+        }
+
+        .keypad-btn:active {
+            background-color: #e6f3ff; 
+            transform: scale(0.97);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* --- 6. 结束结果列表样式 (移除列表符号，区分颜色) --- */
+        #end-game-summary {
+             padding: 20px;
+             background-color: #f8f9fa;
+             border-radius: 15px;
+             box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+             margin-top: 25px;
+        }
+        
+        #final-results {
+            list-style: none; /* **移除列表符号** */
+            padding: 0;
+            margin-top: 15px;
+            text-align: left;
+            max-height: 250px; 
+            overflow-y: auto;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+        
+        #final-results li {
+            padding: 8px 0;
+            border-bottom: 1px dotted #ccc;
+            font-size: 1em;
+            /* 统一列表项颜色，依靠 span 区分 */
+            color: #495057; 
+        }
+
+        /* **区分结果颜色** */
+        .res-correct { 
+            color: #28a745; 
+            font-weight: bold; 
+            margin-left: 10px;
+        }
+        .res-incorrect { 
+            color: #dc3545; 
+            font-weight: bold; 
+            margin-left: 10px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>溯答魔鬼计算</h1>
+
+        <div id="controls">
+            <div class="control-group">
+                <label for="memory-offset">溯答间隔题目数 (2-20):</label>
+                <input type="number" id="memory-offset" value="5" min="2" max="20">
+            </div>
+            
+            <div class="control-group">
+                <label for="total-questions">总题目数量 (至少为间隔数):</label>
+                <input type="number" id="total-questions" value="10" min="5">
+            </div>
+            
+            <button id="start-btn">开始游戏</button>
+        </div>
+
+        <div id="question-area" class="game-section hidden"> 
+            <div id="timer-display" class="fade-in">准备...</div>
+            <div id="question-display" class="question-box"></div>
+        </div>
+
+        <div id="answer-area" class="game-section hidden">
+            <div id="answer-input-group">
+                <div id="answer-prompt"></div>
+                <div id="answer-input-box">
+                    <input type="number" id="answer-input" disabled style="display: none;">
+                </div>
+                <div id="result-display" class="result"></div>
+            </div>
+            
+            <div id="custom-keypad" class="hidden">
+                <button class="keypad-btn" data-value="7">7</button>
+                <button class="keypad-btn" data-value="8">8</button>
+                <button class="keypad-btn" data-value="9">9</button>
+                <button class="keypad-btn" data-value="4">4</button>
+                <button class="keypad-btn" data-value="5">5</button>
+                <button class="keypad-btn" data-value="6">6</button>
+                <button class="keypad-btn" data-value="1">1</button>
+                <button class="keypad-btn" data-value="2">2</button>
+                <button class="keypad-btn" data-value="3">3</button>
+            </div>
+        </div>
+        
+        <div id="end-game-summary" class="hidden">
+             <ul id="final-results"></ul>
+             <button id="restart-btn">再来一轮</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const totalQuestionsInput = document.getElementById('total-questions');
+            const memoryOffsetInput = document.getElementById('memory-offset'); 
+            const startBtn = document.getElementById('start-btn');
+            const controls = document.getElementById('controls');
+            const questionArea = document.getElementById('question-area');
+            const answerArea = document.getElementById('answer-area');
+            const timerDisplay = document.getElementById('timer-display');
+            const questionDisplay = document.getElementById('question-display');
+            const answerInput = document.getElementById('answer-input'); 
+            const answerPrompt = document.getElementById('answer-prompt');
+            const resultDisplay = document.getElementById('result-display');
+            const endGameSummary = document.getElementById('end-game-summary'); 
+            const finalResultsList = document.getElementById('final-results');
+            const restartBtn = document.getElementById('restart-btn'); 
+            const customKeypad = document.getElementById('custom-keypad'); 
+
+            let totalQuestions = 0;
+            let MEMORY_OFFSET = 5; 
+            let questions = []; 
+            let presentationQuestionIndex = 0; 
+            let answerQuestionIndex = 0; 
+            let presentationInterval = null;
+            const presentationTime = 2000; 
+
+            // --- 辅助函数：题目生成（略） ---
+            function getRandomDigit() { return Math.floor(Math.random() * 9) + 1; }
+            function generateQuestion(lastExpression = '') {
+                let num1, num2, operator, result, expression;
+                do {
+                    num1 = getRandomDigit();
+                    num2 = getRandomDigit();
+                    operator = (Math.random() > 0.5) ? '+' : '-';
+                    if (operator === '+') {
+                        result = num1 + num2;
+                        expression = `${num1} + ${num2}`;
+                    } else {
+                        if (num1 < num2) { [num1, num2] = [num2, num1]; }
+                        result = num1 - num2;
+                        expression = `${num1} - ${num2}`;
+                    }
+                } while (result < 1 || result > 9 || expression === lastExpression);
+                return { expression, answer: result, userAnswer: null, isCorrect: null };
+            }
+            function generateAllQuestions(count) {
+                const newQuestions = [];
+                let lastExpression = '';
+                for (let i = 0; i < count; i++) {
+                    const q = generateQuestion(lastExpression);
+                    newQuestions.push(q);
+                    lastExpression = q.expression;
+                }
+                return newQuestions;
+            }
+
+
+            // --- 游戏流程控制 ---
+
+            function startPresentation() {
+                questionArea.classList.remove('hidden'); 
+                answerArea.classList.add('hidden');
+                customKeypad.classList.add('hidden'); 
+                presentationQuestionIndex = 0;
+                answerQuestionIndex = 0;
+                
+                resultDisplay.classList.remove('visible', 'correct', 'incorrect'); 
+                resultDisplay.style.opacity = 0;
+                
+                displayQuestion(presentationQuestionIndex); 
+                presentationQuestionIndex++;
+
+                presentationInterval = setInterval(() => {
+                    if (presentationQuestionIndex < MEMORY_OFFSET) {
+                        displayQuestion(presentationQuestionIndex);
+                        presentationQuestionIndex++;
+                    } else {
+                        clearInterval(presentationInterval);
+                        setTimeout(startCombinedPhase, presentationTime);
+                    }
+                }, presentationTime);
+            }
+
+            function displayQuestion(index) {
+                const total = totalQuestions;
+                const currentQNum = index + 1;
+
+                if (index < total) {
+                    timerDisplay.textContent = `第 ${currentQNum} 题 / 共 ${total} 题 (溯答间隔: ${MEMORY_OFFSET})`;
+                    
+                    questionDisplay.textContent = questions[index].expression + " = ?"; 
+                    
+                    questionDisplay.style.opacity = 0;
+                    setTimeout(() => {
+                        questionDisplay.style.opacity = 1;
+                    }, 50); 
+                }
+            }
+
+            function startCombinedPhase() {
+                answerArea.classList.remove('hidden'); 
+                customKeypad.classList.remove('hidden'); 
+                
+                displayQuestion(MEMORY_OFFSET); 
+                presentationQuestionIndex = MEMORY_OFFSET + 1; 
+
+                updateAnswerPrompt();
+            }
+
+            function updateAnswerPrompt() {
+                const total = totalQuestions;
+                const QNum = answerQuestionIndex + 1;
+
+                if (answerQuestionIndex < total) {
+                    answerPrompt.textContent = `请输入第 ${QNum} 题的答案:`; 
+                    answerInput.value = ''; 
+                    
+                    resultDisplay.classList.remove('visible', 'correct', 'incorrect');
+                    resultDisplay.style.opacity = 0;
+                } else {
+                    endGame();
+                }
+            }
+            
+            function handleKeypadClick(event) {
+                const button = event.target.closest('.keypad-btn');
+                if (!button) return;
+                
+                const userAnswer = parseInt(button.dataset.value);
+                if (isNaN(userAnswer) || userAnswer < 1 || userAnswer > 9) return;
+                
+                answerInput.value = userAnswer;
+
+                const questionData = questions[answerQuestionIndex];
+                const isCorrect = userAnswer === questionData.answer;
+
+                questionData.userAnswer = userAnswer;
+                questionData.isCorrect = isCorrect;
+
+                displayResult(answerQuestionIndex, questionData.expression, questionData.answer, isCorrect);
+                
+                answerQuestionIndex++;
+                
+                customKeypad.style.pointerEvents = 'none'; 
+                
+                setTimeout(() => {
+                    
+                    customKeypad.style.pointerEvents = 'auto'; 
+
+                    if (presentationQuestionIndex < totalQuestions) {
+                        displayQuestion(presentationQuestionIndex);
+                        presentationQuestionIndex++;
+                    }
+                    
+                    const lastQuestionIndex = totalQuestions - 1;
+                    if (totalQuestions > MEMORY_OFFSET && answerQuestionIndex - 1 === lastQuestionIndex - MEMORY_OFFSET) {
+                        questionDisplay.textContent = '题目呈现完毕。';
+                        questionDisplay.style.opacity = 0; 
+                        timerDisplay.textContent = `所有题目已呈现完毕 (溯答间隔: ${MEMORY_OFFSET})。`;
+                    }
+                    
+                    updateAnswerPrompt();
+                    
+                }, 800); 
+            }
+            customKeypad.addEventListener('click', handleKeypadClick);
+            
+            function displayResult(index, expression, answer, isCorrect) {
+                const statusText = isCorrect ? '✔ 正确' : '✘ 错误';
+                const statusClass = isCorrect ? 'correct' : 'incorrect';
+                
+                // 确保结果显示第 X 题的答案
+                resultDisplay.textContent = `第 ${index + 1} 题: ${expression} = ${answer} [您输入: ${questions[index].userAnswer}] ${statusText}`;
+                
+                resultDisplay.classList.remove('correct', 'incorrect'); 
+                resultDisplay.classList.add('visible', statusClass);
+                
+                resultDisplay.style.opacity = 0;
+                void resultDisplay.offsetWidth; 
+                resultDisplay.style.opacity = 1;
+            }
+
+            function endGame() {
+                answerArea.classList.add('hidden'); 
+                customKeypad.classList.add('hidden');
+                
+                let correctCount = 0;
+                questions.forEach(q => {
+                    if (q.isCorrect === true) {
+                        correctCount++;
+                    }
+                });
+                const incorrectCount = totalQuestions - correctCount;
+
+                timerDisplay.classList.add('final-score');
+                timerDisplay.innerHTML = `
+                    作答完成！<br>
+                    答对: <span style="color: #28a745;">${correctCount} 题</span> | 
+                    答错: <span style="color: #dc3545;">${incorrectCount} 题</span>
+                `;
+                questionDisplay.textContent = '详细结果如下：'; 
+                
+                // 填充结果列表
+                finalResultsList.innerHTML = '';
+                questions.forEach((q, index) => {
+                    const li = document.createElement('li');
+                    const statusClass = q.isCorrect ? 'res-correct' : 'res-incorrect';
+                    const statusText = q.isCorrect ? '✔ 正确' : '✘ 错误';
+                    
+                    // **优化：移除列表符号，使用 span 区分颜色**
+                    li.innerHTML = `
+                        <span style="font-weight: bold;">${index + 1}.</span> 
+                        ${q.expression} = ${q.answer} 
+                        (您的答案: ${q.userAnswer === null ? '未作答' : q.userAnswer})
+                        <span class="${statusClass}">${statusText}</span>
+                    `;
+                    finalResultsList.appendChild(li);
+                });
+
+                endGameSummary.classList.remove('hidden');
+            }
+
+
+            // --- 游戏启动逻辑 ---
+
+            startBtn.addEventListener('click', () => {
+                const offset = parseInt(memoryOffsetInput.value);
+                const count = parseInt(totalQuestionsInput.value);
+
+                if (isNaN(offset) || offset < 2 || offset > 20) {
+                    alert('溯答间隔题目数必须在 2 到 20 之间！');
+                    return;
+                }
+                MEMORY_OFFSET = offset;
+                
+                if (isNaN(count) || count < MEMORY_OFFSET) {
+                    alert(`总题目数量必须至少是 ${MEMORY_OFFSET} 题！`);
+                    return;
+                }
+                totalQuestions = count;
+                
+                if (count < MEMORY_OFFSET + 1) {
+                    alert(`提示：作答将在所有 ${count} 题播放完后直接开始。`);
+                }
+                
+                questions = generateAllQuestions(totalQuestions);
+
+                controls.classList.add('hidden'); 
+                endGameSummary.classList.add('hidden'); 
+                
+                questionArea.classList.remove('hidden');
+                answerArea.classList.add('hidden'); 
+                
+                timerDisplay.classList.remove('final-score'); 
+
+                startPresentation(); 
+            });
+
+            // --- 再来一轮按钮逻辑 ---
+            restartBtn.addEventListener('click', () => {
+                window.location.reload(); 
+            });
+        });
+    </script>
+</body>
+</html>
