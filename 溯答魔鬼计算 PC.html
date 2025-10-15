@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>溯答魔鬼计算</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            transition: all 0.5s ease-in-out;
+        }
+
+        h1 {
+            color: #dc3545; /* 突出“魔鬼”计算的紧张感 */
+            margin-bottom: 25px;
+        }
+
+        .game-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #e9ecef;
+        }
+
+        .hidden {
+            display: none !important; 
+        }
+        
+        /* 控制区样式 */
+        #controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: stretch;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            text-align: left;
+        }
+
+        #total-questions, #memory-offset {
+            padding: 10px;
+            border: 2px solid #ced4da;
+            border-radius: 6px;
+            font-size: 1em;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .control-group label {
+             font-weight: 500;
+             color: #343a40;
+        }
+
+
+        #start-btn, #restart-btn {
+            padding: 12px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s;
+        }
+        
+        #restart-btn {
+            background-color: #007bff;
+            margin-top: 20px;
+        }
+        
+        #start-btn:hover, #restart-btn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+        #restart-btn:hover {
+             background-color: #0056b3;
+        }
+
+        /* 题目展示区样式 */
+        .question-box {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #dc3545;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        .show-question {
+            animation: fadeInScale 0.5s ease-out forwards;
+        }
+
+        #timer-display {
+            font-size: 1.2em;
+            color: #6c757d;
+            min-height: 30px;
+            font-weight: 500;
+        }
+        
+        /* 最终得分显示样式 */
+        .final-score {
+             font-size: 1.4em;
+             font-weight: bold;
+             color: #dc3545;
+             padding: 15px 0;
+        }
+
+        /* 答案输入区样式 */
+        #answer-input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            min-height: 180px; 
+            justify-content: flex-start;
+        }
+        
+        #answer-input-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #answer-input {
+            width: 80px;
+            padding: 12px;
+            text-align: center;
+            border: 3px solid #007bff;
+            border-radius: 8px;
+            font-size: 1.8em;
+            font-weight: bold;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #answer-input:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 8px rgba(40, 167, 69, 0.7);
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            font-size: 1.1em;
+            
+            visibility: hidden; 
+            opacity: 0; 
+            min-height: 40px; 
+            box-sizing: border-box;
+        }
+        
+        .result.visible {
+            visibility: visible;
+            animation: fadeIn 0.5s forwards;
+        }
+
+
+        .correct {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* 最终结果列表样式 */
+        #final-results {
+            list-style: none;
+            padding: 0;
+            margin-top: 15px;
+            text-align: left;
+            max-height: 250px; /* 限制高度，允许滚动 */
+            overflow-y: auto;
+            border-top: 1px solid #ced4da;
+            padding-top: 10px;
+        }
+        #final-results li {
+            padding: 8px 0;
+            border-bottom: 1px dotted #ced4da;
+            font-size: 0.95em;
+        }
+        .res-correct { color: #28a745; font-weight: bold; }
+        .res-incorrect { color: #dc3545; font-weight: bold; }
+
+        /* 动画定义 */
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>溯答魔鬼计算</h1>
+
+        <div id="controls" class="game-section">
+            <div class="control-group">
+                <label for="memory-offset">溯答间隔题目数 (2-20):</label>
+                <input type="number" id="memory-offset" value="5" min="2" max="20">
+            </div>
+            
+            <div class="control-group">
+                <label for="total-questions">总题目数量 (至少为间隔数):</label>
+                <input type="number" id="total-questions" value="10" min="5">
+            </div>
+            
+            <button id="start-btn">开始游戏</button>
+        </div>
+
+        <div id="question-area" class="game-section hidden">
+            <div id="timer-display" class="fade-in">准备...</div>
+            <div id="question-display" class="question-box"></div>
+        </div>
+
+        <div id="answer-area" class="game-section hidden">
+            <div id="answer-input-group">
+                <div id="answer-prompt" style="font-size: 1.2em; color:#6c757d;"></div>
+                <div id="answer-input-box">
+                    <input type="number" id="answer-input" min="1" max="9" maxlength="1" disabled>
+                </div>
+                <div id="result-display" class="result"></div>
+            </div>
+        </div>
+        
+        <div id="end-game-summary" class="hidden">
+            <ul id="final-results"></ul>
+            <button id="restart-btn">再来一轮</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const totalQuestionsInput = document.getElementById('total-questions');
+            const memoryOffsetInput = document.getElementById('memory-offset'); 
+            const startBtn = document.getElementById('start-btn');
+            const controls = document.getElementById('controls');
+            const questionArea = document.getElementById('question-area');
+            const answerArea = document.getElementById('answer-area');
+            const timerDisplay = document.getElementById('timer-display');
+            const questionDisplay = document.getElementById('question-display');
+            const answerInput = document.getElementById('answer-input');
+            const answerPrompt = document.getElementById('answer-prompt');
+            const resultDisplay = document.getElementById('result-display');
+            const endGameSummary = document.getElementById('end-game-summary'); // 包含最终结果列表和按钮的容器
+            const finalResultsList = document.getElementById('final-results');
+            const restartBtn = document.getElementById('restart-btn'); 
+
+            let totalQuestions = 0;
+            let MEMORY_OFFSET = 5; 
+            let questions = []; 
+            let presentationQuestionIndex = 0; 
+            let answerQuestionIndex = 0; 
+            let presentationInterval = null;
+            const presentationTime = 2000; 
+
+            // --- 游戏逻辑函数 ---
+
+            function getRandomDigit() { return Math.floor(Math.random() * 9) + 1; }
+
+            function generateQuestion(lastExpression = '') {
+                let num1, num2, operator, result, expression;
+                
+                do {
+                    num1 = getRandomDigit();
+                    num2 = getRandomDigit();
+                    operator = (Math.random() > 0.5) ? '+' : '-';
+
+                    if (operator === '+') {
+                        result = num1 + num2;
+                        expression = `${num1} + ${num2}`;
+                    } else {
+                        if (num1 < num2) { [num1, num2] = [num2, num1]; }
+                        result = num1 - num2;
+                        expression = `${num1} - ${num2}`;
+                    }
+                } while (result < 1 || result > 9 || expression === lastExpression);
+                return { expression, answer: result, userAnswer: null, isCorrect: null };
+            }
+
+            function generateAllQuestions(count) {
+                const newQuestions = [];
+                let lastExpression = '';
+                for (let i = 0; i < count; i++) {
+                    const q = generateQuestion(lastExpression);
+                    newQuestions.push(q);
+                    lastExpression = q.expression;
+                }
+                return newQuestions;
+            }
+
+            function startPresentation() {
+                questionArea.classList.remove('hidden');
+                answerArea.classList.add('hidden');
+                presentationQuestionIndex = 0;
+                answerQuestionIndex = 0;
+                
+                resultDisplay.classList.remove('visible', 'correct', 'incorrect');
+                resultDisplay.style.opacity = 0;
+                
+                displayQuestion(presentationQuestionIndex); 
+                presentationQuestionIndex++;
+
+                presentationInterval = setInterval(() => {
+                    if (presentationQuestionIndex < MEMORY_OFFSET) {
+                        displayQuestion(presentationQuestionIndex);
+                        presentationQuestionIndex++;
+                    } else {
+                        clearInterval(presentationInterval);
+                        setTimeout(startCombinedPhase, presentationTime);
+                    }
+                }, presentationTime);
+            }
+
+            function displayQuestion(index) {
+                const total = totalQuestions;
+                const currentQNum = index + 1;
+
+                if (index < total) {
+                    timerDisplay.textContent = `第 ${currentQNum} 题 / 共 ${total} 题 (溯答间隔: ${MEMORY_OFFSET})`;
+                    
+                    questionDisplay.classList.remove('show-question');
+                    setTimeout(() => {
+                        questionDisplay.textContent = questions[index].expression + " = ?";
+                        questionDisplay.classList.add('show-question');
+                    }, 50);
+                }
+            }
+
+            function startCombinedPhase() {
+                answerArea.classList.remove('hidden');
+                answerInput.disabled = false;
+
+                // 上方展示第 M+1 题 (索引 M)
+                displayQuestion(MEMORY_OFFSET); 
+                presentationQuestionIndex = MEMORY_OFFSET + 1; 
+
+                // 下方等待用户输入第 1 题 (索引 0) 的答案
+                updateAnswerPrompt();
+                answerInput.focus();
+            }
+
+            function updateAnswerPrompt() {
+                const total = totalQuestions;
+                const QNum = answerQuestionIndex + 1;
+
+                if (answerQuestionIndex < total) {
+                    answerPrompt.textContent = `请输入第 ${QNum} 题的答案:`;
+                    answerInput.value = ''; 
+                    answerInput.focus(); 
+                    resultDisplay.classList.remove('visible', 'correct', 'incorrect');
+                    resultDisplay.style.opacity = 0;
+                } else {
+                    endGame();
+                }
+            }
+            
+            function handleAnswerInput() {
+                const userAnswer = parseInt(answerInput.value);
+                
+                if (answerInput.value.length > 1) {
+                    answerInput.value = answerInput.value.slice(0, 1);
+                }
+
+                if (answerInput.value.length === 1 && userAnswer >= 1 && userAnswer <= 9) {
+                    
+                    const questionData = questions[answerQuestionIndex];
+                    const isCorrect = userAnswer === questionData.answer;
+
+                    questionData.userAnswer = userAnswer;
+                    questionData.isCorrect = isCorrect;
+
+                    displayResult(answerQuestionIndex, questionData.expression, questionData.answer, isCorrect);
+                    
+                    answerQuestionIndex++;
+                    
+                    setTimeout(() => {
+                        
+                        if (presentationQuestionIndex < totalQuestions) {
+                            displayQuestion(presentationQuestionIndex);
+                            presentationQuestionIndex++;
+                        }
+                        
+                        // N-M 题回答完后，隐藏第 N 题算式
+                        const lastQuestionIndex = totalQuestions - 1;
+                        if (totalQuestions > MEMORY_OFFSET && answerQuestionIndex - 1 === lastQuestionIndex - MEMORY_OFFSET) {
+                            questionDisplay.textContent = '题目呈现完毕。';
+                            questionDisplay.classList.remove('show-question');
+                            timerDisplay.textContent = `所有题目已呈现完毕 (溯答间隔: ${MEMORY_OFFSET})。`;
+                        }
+                        
+                        updateAnswerPrompt();
+                        
+                    }, 800); 
+                }
+            }
+            
+            function displayResult(index, expression, answer, isCorrect) {
+                resultDisplay.textContent = `第 ${index + 1} 题: ${expression} = ${answer} [您输入: ${questions[index].userAnswer}]`;
+                
+                resultDisplay.classList.remove('visible', 'correct', 'incorrect');
+                resultDisplay.classList.add('visible', isCorrect ? 'correct' : 'incorrect');
+                
+                resultDisplay.style.opacity = 0;
+                void resultDisplay.offsetWidth; 
+                resultDisplay.style.opacity = 1;
+            }
+
+            function endGame() {
+                answerArea.classList.add('hidden'); // 隐藏作答区
+                
+                let correctCount = 0;
+                questions.forEach(q => {
+                    if (q.isCorrect === true) {
+                        correctCount++;
+                    }
+                });
+                const incorrectCount = totalQuestions - correctCount;
+
+                // 1. 显示分数总结
+                timerDisplay.classList.add('final-score');
+                timerDisplay.innerHTML = `
+                    作答完成！<br>
+                    答对: <span style="color: #28a745;">${correctCount} 题</span> | 
+                    答错: <span style="color: #dc3545;">${incorrectCount} 题</span>
+                `;
+                questionDisplay.textContent = '详细结果如下：'; 
+                
+                // 2. 填充结果列表
+                finalResultsList.innerHTML = '';
+                questions.forEach((q, index) => {
+                    const li = document.createElement('li');
+                    const statusClass = q.isCorrect ? 'res-correct' : 'res-incorrect';
+                    const statusText = q.isCorrect ? '✔ 正确' : '✘ 错误';
+                    
+                    li.innerHTML = `
+                        ${index + 1}. ${q.expression} = ${q.answer} 
+                        (您的答案: ${q.userAnswer === null ? '未作答' : q.userAnswer})
+                        <span class="${statusClass}">[${statusText}]</span>
+                    `;
+                    finalResultsList.appendChild(li);
+                });
+
+                // 3. 显示结果容器
+                endGameSummary.classList.remove('hidden');
+            }
+
+
+            // --- 游戏启动逻辑 ---
+
+            startBtn.addEventListener('click', () => {
+                const offset = parseInt(memoryOffsetInput.value);
+                const count = parseInt(totalQuestionsInput.value);
+
+                // 1. 验证间隔数 M
+                if (isNaN(offset) || offset < 2 || offset > 20) {
+                    alert('溯答间隔题目数必须在 2 到 20 之间！');
+                    return;
+                }
+                MEMORY_OFFSET = offset;
+                
+                // 2. 验证总题目数 N
+                if (isNaN(count) || count < MEMORY_OFFSET) {
+                    alert(`总题目数量必须至少是 ${MEMORY_OFFSET} 题！`);
+                    return;
+                }
+                totalQuestions = count;
+                
+                // 3. 提示
+                if (count < MEMORY_OFFSET + 1) {
+                    alert(`提示：作答将在所有 ${count} 题播放完后直接开始。`);
+                }
+                
+                questions = generateAllQuestions(totalQuestions);
+
+                // 4. 初始化 UI
+                controls.classList.add('hidden'); 
+                endGameSummary.classList.add('hidden'); 
+                
+                questionArea.classList.remove('hidden');
+                answerArea.classList.add('hidden'); 
+                
+                // 确保输入框可以输入
+                answerInput.value = '';
+                answerInput.disabled = true;
+                answerInput.classList.remove('hidden');
+                timerDisplay.classList.remove('final-score'); 
+
+                
+                answerInput.removeEventListener('input', handleAnswerInput);
+                answerInput.addEventListener('input', handleAnswerInput);
+
+                startPresentation(); 
+            });
+
+            // --- 再来一轮按钮逻辑 ---
+            restartBtn.addEventListener('click', () => {
+                window.location.reload(); 
+            });
+        });
+    </script>
+</body>
+</html>
